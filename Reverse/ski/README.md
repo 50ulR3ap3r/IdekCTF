@@ -1,61 +1,107 @@
-Name: SKI
-files : program.txt ; interpreter.py ; interpreter.cpp
-Flag format: idek{...}
+````markdown
+# 🎿 SKI 
 
+**Category**: Reverse Engineering / Esoteric Languages  
+**Flag format**: `idek{...}`  
+**Files provided**:
+- `program.txt`
+- `interpreter.py`
+- `interpreter.cpp`
 
-This was a fascinating challenge that combined esoteric programming languages with classic reverse engineering techniques. Instead of a typical binary, we were given a program written in SKI combinator calculus, a system famous for its power and extreme obfuscation.
+---
 
-This write-up details the more direct method: solving it the "intended way" through static analysis.
+## 🧠 Description
 
-1. Initial Reconnaissance
-The challenge provided three files:
+This fascinating challenge merges **esoteric programming** with classic reverse engineering.  
+Instead of a binary, we are given a massive SKI combinator expression — a form of **combinatory logic** known for its simplicity and obfuscation.
 
-interpreter.py: A slow but readable Python implementation of a SKI interpreter.
+---
 
-interpreter.cpp: A fast, optimized C++ version of the interpreter.
+## 📦 1. Initial Reconnaissance
 
-program.txt: A massive, single-line SKI expression that constitutes the core logic.
+The challenge provides three files:
 
-Analyzing the readable interpreter.py revealed the program's core mechanics:
+- `**interpreter.py**`: A slow but readable Python implementation of a SKI interpreter.
+- `**interpreter.cpp**`: A faster, optimized version in C++.
+- `**program.txt**`: A huge, single-line SKI expression containing the verification logic.
 
-Input Processing: The program prompts for a flag, which it converts into a 560-bit sequence (implying a 70-character ASCII flag).
+---
 
-SKI Booleans: Each bit of the input is translated into a specific SKI expression that functions as a boolean value:
+## 🔍 2. Understanding the Interpreter
 
-A 1 bit becomes the combinator K (True).
+By analyzing `interpreter.py`, we learned how the system processes the input:
 
-A 0 bit becomes the application (K I) (False).
+### 🧮 Flag Conversion
 
-Program Logic: The enormous expression in program.txt is a function that sequentially consumes each of the 560 flag-derived boolean variables (_F0, _F1, ..., _F559).
+- The program prompts the user for a flag.
+- It encodes the flag into **560 bits**, meaning the flag must be **70 ASCII characters** long.
+- Each **bit** is turned into a SKI boolean:
+  - `1` → `K`  (equivalent to **True**)
+  - `0` → `(K I)` (equivalent to **False**)
 
-Win Condition: The flag is correct if, and only if, the entire expression evaluates to the single combinator K (True) after all reductions. Any other result signifies failure.
+### 🧠 Logic of the Program
 
-The challenge description explicitly warns that running the interpreters is too resource-intensive. This was a clear signal that brute-force or direct execution was a dead end. We needed a shortcut.
+- The main expression in `program.txt` consumes these 560 variables:
+  - `_F0`, `_F1`, ..., `_F559`
+- The expression is reduced step-by-step using SKI rules.
+- If the final result is `K` (i.e., **True**), the input is considered valid.
 
-2. The "Aha!" Moment: From Dynamic to Static Analysis
-An initial thought was a side-channel attack. We could feed the program bits one by one and observe some property of the resulting expression, like its complexity or evaluation time. A wrong bit would likely cause the expression to collapse into a simple "False" state, while the correct bit would yield another complex expression, ready for the next input.
+---
 
-However, a closer look at program.txt suggested a far more elegant solution. If the program checks each bit sequentially, it must contain a repeating structural pattern—a piece of code for "check bit i". It stood to reason that the code to check for a 0 would be textually different from the code to check for a 1.
+## 🚫 3. Why Not Run It?
 
-If we could find a unique textual "fingerprint" for one of these checks, we could solve the puzzle without ever running the interpreter.
+The challenge specifically warns that running either interpreter is **too slow** due to the size of the program. Brute-force or full evaluation is not viable.
 
-3. The Intended Way: Static Pattern Matching
-By examining the text of program.txt around the flag variables (_F0, _F1, _F2, etc.), a clear and repeating pattern emerged. One specific sequence of combinators consistently appeared immediately before some of the flag variables.
+This hinted that the solution lies elsewhere — not in execution, but in **static analysis**.
 
-This fingerprint is: (((S ((S I) (K (K I)))) (K K)) 
+---
 
-This sequence is the SKI implementation of a function that effectively checks if its argument is (K I) (False).
+## ✨ 4. The "Aha!" Moment
 
-This led to our core hypothesis: If this pattern appears immediately before a flag variable _Fi, the program expects the i-th bit of the flag to be 0. If any other pattern appears, the program must be expecting a 1.
+The key insight:
 
-This simple, powerful insight allows us to bypass the complex SKI evaluation entirely. We can simply "read" the correct bits from the source file itself.
+> If each bit is checked one by one, the source must contain **repeating code patterns** that correspond to either a `0` or `1` check.
 
-4. The Solver Script
-The following Python script implements this static analysis strategy. It uses a regular expression to robustly find each flag variable in the correct order and then checks the text immediately preceding it for our "zero-bit" fingerprint.
+By identifying these patterns, we can **read the solution directly from the source** without executing anything.
 
-check solve.py
+---
 
-5. Conclusion
-This challenge was a masterful example of how a problem that appears computationally impossible can be solved with a simple, elegant observation. By stepping back from the complex mechanics of SKI evaluation and instead analyzing the static structure of the code, we found the intended shortcut.
+## 🧬 5. Pattern Discovery
 
-Final Flag: idek{d1d_y0u_0pt1m1z3_4nd_s1d3ch4nn3l3d_0r_s0lv3d_1n_7h3_1nt3nd3d_w4y}
+### 🔎 Observations
+
+Upon searching `program.txt` near each `_Fi`, we noticed a **recurring structure**:
+
+```text
+(((S ((S I) (K (K I)))) (K K))
+````
+
+This SKI pattern corresponds to a boolean test for **False** → `(K I)`.
+
+### 💡 Hypothesis
+
+* If this pattern appears **before** a variable `_Fi`, then bit `i` of the flag is expected to be `0`.
+* Otherwise (if different), it's expecting a `1`.
+
+---
+
+## 🏁 6. Final Flag
+
+```
+idek{d1d_y0u_0pt1m1z3_4nd_s1d3ch4nn3l3d_0r_s0lv3d_1n_7h3_1nt3nd3d_w4y}
+```
+
+---
+
+## ✅ 8. Conclusion
+
+This challenge was a brilliant example of:
+
+* **Esoteric logic** (SKI calculus)
+* **Static reverse engineering**
+* **Pattern recognition**
+* Avoiding brute force in favor of smart observation
+
+Rather than evaluating 560 combinator applications, we used **textual fingerprints** to extract the answer efficiently and as intended by the challenge author.
+
+---
