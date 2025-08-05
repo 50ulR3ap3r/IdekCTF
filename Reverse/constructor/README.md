@@ -1,11 +1,22 @@
-This document details the solution to the "Constructor" binary challenge. The binary validates a password using a simple, custom encryption scheme. The solution lies in reversing this algorithm and applying it to an encrypted data block found within the binary itself.
+````markdown
+# 🛠️ Constructor - Reverse Engineering Challenge
+**Platform**: Linux (x86-64)  
+**Flag format**: `idek{...}`  
+**Challenge file**: `./chall`
 
-Step 1: Initial Reconnaissance
-The first step is to understand the nature of the binary.
+---
 
-File Analysis
-The file and checksec commands provide a baseline understanding of the executable.
+## 🧩 Description
 
+This challenge, named **"Constructor"**, is a great exercise in reverse engineering a statically linked and stripped Linux binary. The goal is to understand a simple decryption function and extract the flag hidden directly within the binary.
+
+---
+
+## 🔍 1. Initial Reconnaissance
+
+After extracting the archive, we begin by inspecting the binary:
+
+```bash
 $ file chall
 chall: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, stripped
 
@@ -16,33 +27,41 @@ $ checksec chall
     Stack:    No canary found
     NX:       NX enabled
     PIE:      No PIE (0x400000)
+````
 
-Analysis:
+### 🧠 Observations
 
-Statically Linked & Stripped: All necessary code is in the file, but function names are removed, requiring manual analysis to understand the program flow.
+* **Statically linked**: No external dependencies.
+* **Stripped**: No symbols, harder analysis.
+* **No PIE**: Predictable memory layout (base address = `0x400000`).
+* **No stack canary**: Not relevant here.
 
-No PIE: The binary loads at a fixed address (0x400000), which makes referencing memory locations straightforward during analysis.
+---
 
-Searching for Strings
-A quick search for keywords often reveals the program's intent.
+## 🔎 2. Searching for Strings
 
+```bash
 $ strings chall | grep -iE 'correct|wrong'
 Correct!
 Wrong!
+```
 
-The presence of these strings confirms a simple validation mechanism. Our goal is to find the data it's comparing against.
+We find two important strings used for feedback. These are likely part of the input validation function.
 
-Step 2: Static Analysis with Ghidra
-Opening the binary in a decompiler like Ghidra allows us to inspect its internal logic. By searching for references to the "Correct!" string, we immediately find the validation function, which Ghidra labels FUN_00401050.
+---
 
-The core logic of this function is a loop that decrypts and compares data:
+## ⚙️ 3. Reverse Engineering with Ghidra
 
-// Pseudo-code for function FUN_00401050
+We open the binary in **Ghidra** and locate the function containing `"Correct!"`. Ghidra names it `FUN_00401050`.
+
+### 📄 Decompiled Pseudo-code
+
+```c
 undefined8 FUN_00401050(void)
 {
-  // ... (initialization) ...
+  // ... initialization ...
 
-  // Main decryption and comparison loop
+  // Decryption loop
   uVar3 = 0;
   do {
     bVar1 = (&DAT_00403040)[uVar3] ^ bVar6;
@@ -51,33 +70,52 @@ undefined8 FUN_00401050(void)
     uVar3 = uVar3 + 1;
   } while (uVar3 != 0x2a);
 
-  // ... (comparison with user input) ...
+  // ... comparison with user input ...
 }
+```
 
-Step 3: Vulnerability and Strategy
-The vulnerability is the simplicity of the encryption scheme. The program reads 42 bytes (0x2a) from address 0x403040, decrypts them, and compares the result to the user's input. The algorithm is a series of XOR operations, which are easily reversible.
+---
 
-Our strategy is therefore:
+## 🔐 4. Understanding the Decryption Algorithm
 
-Extract the encrypted data block from the binary at address 0x403040.
+### 🔁 For each byte at index `i`:
 
-Re-implement the decryption logic in a script.
+1. Read encrypted byte from address `0x403040`.
+2. XOR with incrementing value `bVar6`, starting from an unknown seed.
+3. XOR the result with `(i >> 1)`.
+4. XOR with constant `0x5a`.
 
-Run the script on the extracted data to reveal the flag.
+The decrypted value is then compared against the user input.
 
-Step 4: Extraction and Decryption
-Dumping the Encrypted Data
-We use xxd to dump the 42 bytes of encrypted data directly from the file, starting at offset 0x3040.
+---
 
+## 📥 5. Dumping the Encrypted Data
+
+We extract the 42 encrypted bytes directly from the binary:
+
+```bash
 $ xxd -s 0x3040 -l 42 -g 1 chall
 00003040: 33 21 00 6d 5f ab 86 b4 d4 2d 36 3a 4e 90 8c e3
 00003050: cc 2e 09 6c 49 b8 8f f7 cc 22 4e 4d 5e b8 80 cb
 00003060: d3 da 20 29 70 02 b7 d1 b7 c4
+```
 
-Decryption Script
-This process is automated using a Python script that precisely reverses the operations seen in Ghidra. See script.py for the complete implementation.
+---
 
-Step 5: Retrieving the Flag
-Running the decryption script on the extracted byte array reveals the flag.
+## ✅ 6. Final Flag
 
-Flag: idek{he4rd_0f_constructors?_now_you_d1d!!}
+```
+idek{he4rd_0f_constructors?_now_you_d1d!!}
+```
+
+---
+
+## 🧠 7. Conclusion
+
+* We used `strings` for initial clues.
+* Ghidra helped us find and understand the decryption logic.
+* Manual data extraction and a Python script allowed us to recover the flag.
+
+This challenge provided a clean introduction to analyzing **stripped, statically linked, non-PIE binaries** and understanding basic obfuscation techniques.
+
+---
