@@ -1,6 +1,3 @@
-````markdown
-# 🎿 SKI 
-
 **Category**: Reverse Engineering / Esoteric Languages  
 **Flag format**: `idek{...}`  
 **Files provided**:
@@ -20,11 +17,11 @@ Instead of a binary, we are given a massive SKI combinator expression — a form
 ## 📦 1. Initial Reconnaissance
 
 The challenge provides three files:
-
+```
 - `**interpreter.py**`: A slow but readable Python implementation of a SKI interpreter.
 - `**interpreter.cpp**`: A faster, optimized version in C++.
 - `**program.txt**`: A huge, single-line SKI expression containing the verification logic.
-
+```
 ---
 
 ## 🔍 2. Understanding the Interpreter
@@ -36,13 +33,17 @@ By analyzing `interpreter.py`, we learned how the system processes the input:
 - The program prompts the user for a flag.
 - It encodes the flag into **560 bits**, meaning the flag must be **70 ASCII characters** long.
 - Each **bit** is turned into a SKI boolean:
+  ```
   - `1` → `K`  (equivalent to **True**)
   - `0` → `(K I)` (equivalent to **False**)
+  ```
 
 ### 🧠 Logic of the Program
 
 - The main expression in `program.txt` consumes these 560 variables:
+  ```
   - `_F0`, `_F1`, ..., `_F559`
+  ```
 - The expression is reduced step-by-step using SKI rules.
 - If the final result is `K` (i.e., **True**), the input is considered valid.
 
@@ -72,7 +73,7 @@ By identifying these patterns, we can **read the solution directly from the sour
 
 Upon searching `program.txt` near each `_Fi`, we noticed a **recurring structure**:
 
-```text
+```
 (((S ((S I) (K (K I)))) (K K))
 ````
 
@@ -82,7 +83,7 @@ This SKI pattern corresponds to a boolean test for **False** → `(K I)`.
 
 * If this pattern appears **before** a variable `_Fi`, then bit `i` of the flag is expected to be `0`.
 * Otherwise (if different), it's expecting a `1`.
-
+  
 ---
 
 ## 🏁 6. Final Flag
