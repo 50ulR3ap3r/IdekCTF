@@ -1,4 +1,3 @@
-````markdown
 # 🛠️ Constructor - Reverse Engineering Challenge
 **Platform**: Linux (x86-64)  
 **Flag format**: `idek{...}`  
@@ -16,7 +15,7 @@ This challenge, named **"Constructor"**, is a great exercise in reverse engineer
 
 After extracting the archive, we begin by inspecting the binary:
 
-```bash
+```
 $ file chall
 chall: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, stripped
 
@@ -40,7 +39,7 @@ $ checksec chall
 
 ## 🔎 2. Searching for Strings
 
-```bash
+```
 $ strings chall | grep -iE 'correct|wrong'
 Correct!
 Wrong!
@@ -56,7 +55,7 @@ We open the binary in **Ghidra** and locate the function containing `"Correct!"`
 
 ### 📄 Decompiled Pseudo-code
 
-```c
+```
 undefined8 FUN_00401050(void)
 {
   // ... initialization ...
@@ -93,7 +92,7 @@ The decrypted value is then compared against the user input.
 
 We extract the 42 encrypted bytes directly from the binary:
 
-```bash
+```
 $ xxd -s 0x3040 -l 42 -g 1 chall
 00003040: 33 21 00 6d 5f ab 86 b4 d4 2d 36 3a 4e 90 8c e3
 00003050: cc 2e 09 6c 49 b8 8f f7 cc 22 4e 4d 5e b8 80 cb
